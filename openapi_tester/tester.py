@@ -66,6 +66,9 @@ def _dict(schema: dict, data: Union[list, dict], case_func: Callable) -> None:
     if not isinstance(data, dict):
         raise SpecificationError(f"The response is {type(data)} where it should be <class 'dict'>")
 
+    if 'properties' in schema:
+        schema = schema['properties']
+
     schema_keys = schema.keys()
     response_keys = data.keys()
 
