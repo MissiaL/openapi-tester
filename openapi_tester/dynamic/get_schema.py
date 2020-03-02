@@ -36,18 +36,20 @@ def validate_paths(url: str, schema_paths: list):
         f'No path found for url `{url}`. Valid urls include {", ".join([key for key in schema_paths])}')
 
 
-def fetch_generated_schema(url: str, method: str) -> dict:
+def fetch_generated_schema(url: str, method: str, status_code:int) -> dict:
     """
     Fetches dynamically generated schema.
 
     :param url: API endpoint URL, str
     :param method: HTTP method, str
+    :param status_code: HTTP status code
     :return: dict
     """
     logger.debug('Fetching generated dynamic schema')
     from drf_yasg.openapi import Info
     from drf_yasg.generators import OpenAPISchemaGenerator
 
+    status_code = str(status_code)
     base_schema = OpenAPISchemaGenerator(
         info=Info(title='', default_version='')).get_schema()
     schema = ordered_dict_to_dict(base_schema.as_odict())['paths']
@@ -61,16 +63,18 @@ def fetch_generated_schema(url: str, method: str) -> dict:
         raise KeyError(
             f'No schema found for method {method.upper()}. Available methods include '
             f'{", ".join([method.upper() for method in schema.keys() if method.upper() != "PARAMETERS"])}.'
-        )
+        ) from None
     try:
-        if '$ref' in schema['200']['schema']:
-            definition = schema['200']['schema']['$ref'].split('/')[-1]
-            return ordered_dict_to_dict(base_schema.as_odict())['definitions'][definition]
-
-        return schema['200']['schema']
+        schema_status_code = schema[status_code]
     except KeyError:
         raise KeyError(
-            f'No schema found for response code 200. Documented responses include '
-            f'{", ".join([code for code in schema.keys() if code != "200"])}.'
-            f'url: {url}'
-        )
+            f'No schema found for response code {status_code}. Documented responses include '
+            f'{", ".join([code for code in schema.keys() if code != status_code])}.'
+            f'Schema url: {url}'
+        ) from None
+
+    if '$ref' in schema_status_code['schema']:
+        definition = schema[status_code]['schema']['$ref'].split('/')[-1]
+        return ordered_dict_to_dict(base_schema.as_odict())['definitions'][definition]
+
+    return schema_status_code['schema']

@@ -39,7 +39,7 @@ def validate_schema(response: Response, method: str, endpoint_url: str) -> None:
         # Get the part of the schema relating to the endpoints success-response
         schema = parse_endpoint(schema=complete_schema, method=method, endpoint_url=endpoint_url)
     else:
-        schema = fetch_generated_schema(url=endpoint_url, method=method)
+        schema = fetch_generated_schema(url=endpoint_url, method=method, status_code=response.status_code)
 
     # Test schema
     if 'properties' in schema:
